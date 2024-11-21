@@ -1,0 +1,5 @@
+services:
+  watermarker:
+    image: watermarker:latest
+    volumes:
+      - ./app.py:/app/app.py
