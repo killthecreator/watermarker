@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from io import BytesIO
 from tkinter import filedialog
-from PyPDF2 import PdfReader, PdfWriter, PdfMerger, PageRange
+from PyPDF2 import PdfReader, PdfWriter, PdfMerger
 from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -41,6 +41,8 @@ def stamp_img(
         pdf_page = reader.pages[i]
         pdf_page.merge_page(stamp_page)
         writer.add_page(pdf_page)
+
+    writer.write(pdf_result)
 
     with open(pdf_result, "wb") as merged_file:
         writer.write(merged_file)
