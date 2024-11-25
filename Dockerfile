@@ -1,11 +1,5 @@
 FROM python
 
-RUN apt-get update && apt-get install -y \
-    ttf-mscorefonts-installer \
-    fontconfig \
-    && fc-cache -f -v \
-    && apt-get clean
-
 WORKDIR /app
 
 COPY . .

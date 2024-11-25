@@ -123,14 +123,16 @@ def run_app():
 
     img = Image.open("example.jpg")
     width, height = img.size  # Canvas size
+    font_size = 100
     text_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
     draw = ImageDraw.Draw(text_img)
 
     # throws error, need to investigate
     try:
-        font = ImageFont.truetype("arial.ttf", 40)  # Use a TrueType font
+        font = ImageFont.truetype("Arial.ttf", font_size)  # Use a TrueType font
     except IOError:
+        print("ERROR LOADING FONT")
         font = ImageFont.load_default()
 
     mock_title = "Title"
@@ -140,7 +142,7 @@ def run_app():
     bbox = draw.textbbox(
         (0, 0), text=multi_line_string, font=font
     )  # Bounding box of the text
-    gap_x, gap_y = 10, 10
+    gap_x, gap_y = 200, 200
     text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
     text_width_with_gap, text_height_with_gap = text_width + gap_x, text_height + gap_y
@@ -152,18 +154,18 @@ def run_app():
         for j in list_y:
             x = i * text_width_with_gap
             y = j * text_height_with_gap
-            print(i, j)
             draw.text(
                 (x, y),
                 align="center",
                 text=multi_line_string,
-                fill=(255, 255, 255, 255),
+                fill=(255, 255, 255, 128),
+                font_size=font_size,
             )
 
     mask_angle = 0
     rotated_mask = text_img.rotate(mask_angle, expand=False, fillcolor="white")
 
-    img.paste(rotated_mask)
+    img.paste(rotated_mask, (0, 0), rotated_mask)
 
     img.save("output/text_mask_debug.png")
 
