@@ -8,6 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 from typing import List, Union
+from math import ceil, sqrt
 
 
 if os.environ.get("DISPLAY", "") == "":
@@ -60,10 +61,58 @@ def update_image(var, index, mode):
     # Reload the original image to clear previous text
     img = Image.open("example.jpg")
 
-    # Draw text on the image
-    draw = ImageDraw.Draw(img)
-    draw.text((28, 36), title_text.get(), fill=(255, 0, 0))  # Title text
-    draw.text((28, 60), subtitle_text.get(), fill=(0, 0, 255))  # Subtitle text
+    width, height = img.size  # Canvas size
+
+    font_size = 100
+    mask_angle = 45
+    diag = ceil(sqrt(width**2 + height**2))
+    text_img = Image.new(
+        "RGBA",
+        (diag, diag),
+        (0, 0, 0, 0),
+    )
+
+    draw = ImageDraw.Draw(text_img)
+
+    # throws error, need to investigate
+    try:
+        font = ImageFont.truetype("Arial.ttf", font_size)  # Use a TrueType font
+    except IOError:
+        print("ERROR LOADING FONT")
+        font = ImageFont.load_default()
+
+    multi_line_string = title_text.get() + "\n" + subtitle_text.get()
+    bbox = draw.textbbox(
+        (0, 0), text=multi_line_string, font=font
+    )  # Bounding box of the text
+    gap_x, gap_y = 200, 200
+    text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+    text_width_with_gap, text_height_with_gap = text_width + gap_x, text_height + gap_y
+
+    list_x = list(range((text_img.width // (text_width_with_gap)) + 1))
+    list_y = list(range((text_img.height // (text_height_with_gap)) + 1))
+
+    for i in list_x:
+        for j in list_y:
+            x = i * text_width_with_gap
+            y = j * text_height_with_gap
+            draw.text(
+                (x, y),
+                align="center",
+                text=multi_line_string,
+                fill=(255, 255, 255, 128),
+                font_size=font_size,
+            )
+
+    rotated_mask = text_img.rotate(mask_angle, expand=True, fillcolor="white")
+
+    offset_x = (rotated_mask.width - width) // 2
+    offset_y = (rotated_mask.height - height) // 2
+
+    img.paste(rotated_mask, (-offset_x, -offset_y), rotated_mask)
+
+    img.save("output/text_mask_debug.png")
 
     # Update the Tkinter image object
     image_tk = ImageTk.PhotoImage(img)
@@ -81,20 +130,18 @@ def choose_color():
 
 
 window = tk.Tk()
-title_text = StringVar()
+window.title("Watermarker")
+window.geometry("520x300")
 
+title_text = StringVar()
 title_text.trace_add("write", update_image)
 
 subtitle_text = StringVar()
-
 subtitle_text.trace_add("write", update_image)
 
 
 def run_app():
     global title_input, subtitle_input, img, image_tk, image_label
-
-    window.title("Watermarker")
-    window.geometry("520x300")
 
     upload_btn = tk.Button(window, text="Выберите файл", command=upload_file)
     upload_btn.pack()
@@ -123,8 +170,15 @@ def run_app():
 
     img = Image.open("example.jpg")
     width, height = img.size  # Canvas size
+
     font_size = 100
-    text_img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    mask_angle = 45
+    diag = ceil(sqrt(width**2 + height**2))
+    text_img = Image.new(
+        "RGBA",
+        (diag, diag),
+        (0, 0, 0, 0),
+    )
 
     draw = ImageDraw.Draw(text_img)
 
@@ -135,8 +189,8 @@ def run_app():
         print("ERROR LOADING FONT")
         font = ImageFont.load_default()
 
-    mock_title = "Title"
-    mock_subtitle = "Subtitle"
+    mock_title = "April studio"
+    mock_subtitle = "Unpaid"
 
     multi_line_string = mock_title + "\n" + mock_subtitle
     bbox = draw.textbbox(
@@ -147,8 +201,8 @@ def run_app():
 
     text_width_with_gap, text_height_with_gap = text_width + gap_x, text_height + gap_y
 
-    list_x = list(range((width // (text_width_with_gap)) + 1))
-    list_y = list(range((height // (text_height_with_gap)) + 1))
+    list_x = list(range((text_img.width // (text_width_with_gap)) + 1))
+    list_y = list(range((text_img.height // (text_height_with_gap)) + 1))
 
     for i in list_x:
         for j in list_y:
@@ -162,10 +216,12 @@ def run_app():
                 font_size=font_size,
             )
 
-    mask_angle = 0
-    rotated_mask = text_img.rotate(mask_angle, expand=False, fillcolor="white")
+    rotated_mask = text_img.rotate(mask_angle, expand=True, fillcolor="white")
 
-    img.paste(rotated_mask, (0, 0), rotated_mask)
+    offset_x = (rotated_mask.width - width) // 2
+    offset_y = (rotated_mask.height - height) // 2
+
+    img.paste(rotated_mask, (-offset_x, -offset_y), rotated_mask)
 
     img.save("output/text_mask_debug.png")
 
@@ -174,7 +230,7 @@ def run_app():
     image_label = tk.Label(window, image=image_tk)
     image_label.pack()
 
-    # window.mainloop()
+    window.mainloop()
 
     return
 
